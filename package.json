@@ -1,0 +1,14 @@
+{
+  "name": "webgl-standalone",
+  "version": "1.0.0",
+  "description": "A webGL study app",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node_modules/.bin/electron ."
+  },
+  "author": "Neuron",
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^6.0.12"
+  }
+}
