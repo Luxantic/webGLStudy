@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const { app, BrowserWindow, Menu } = require("electron");
+require("electron-reload")(__dirname);
 
 const isMac = process.platform === "darwin";
 

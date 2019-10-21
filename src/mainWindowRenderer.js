@@ -1,18 +1,20 @@
-const { remote } = require("electron");
-const path = require("path");
-const { ShaderUtils } = require(path.resolve("src/utils/shaders-utils.js"));
+const { remote } = require('electron');
+const path = require('path');
+const { ShaderUtils } = require(path.resolve('src/utils/shaders-utils.js'));
+const { Utils } = require(__dirname + '/utils/utils.js');
 
-const { mat4 } = require(__dirname + "/utils/gl-matrix.js");
+const { mat4 } = require(__dirname + '/utils/gl-matrix.js');
 
 async function main() {
-  const canvas = document.querySelector("#canvas");
-  const gl = canvas.getContext("webgl");
+  const canvas = document.querySelector('#canvas');
+  const gl = canvas.getContext('webgl');
+  await Utils.loadObjFile2('/../../models/suzanne/suzanne.obj');
 
   // If we don't have a GL context, give up now
 
   if (!gl) {
     alert(
-      "Unable to initialize WebGL. Your browser or machine may not support it."
+      'Unable to initialize WebGL. Your browser or machine may not support it.'
     );
     return;
   }
@@ -20,13 +22,13 @@ async function main() {
   // Vertex shader program
 
   const vsSource = await ShaderUtils.loadShaderFromFile(
-    __dirname + "/../shaders/shader1.vert"
+    __dirname + '/../shaders/shader1.vert'
   );
 
   // Fragment shader program
 
   const fsSource = await ShaderUtils.loadShaderFromFile(
-    __dirname + "/../shaders/shader1.frag"
+    __dirname + '/../shaders/shader1.frag'
   );
 
   // Initialize a shader program; this is where all the lighting
@@ -39,14 +41,15 @@ async function main() {
   const programInfo = {
     program: shaderProgram,
     attribLocations: {
-      vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition")
+      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+      vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor')
     },
     uniformLocations: {
       projectionMatrix: gl.getUniformLocation(
         shaderProgram,
-        "uProjectionMatrix"
+        'uProjectionMatrix'
       ),
-      modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix")
+      modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix')
     }
   };
 
@@ -76,7 +79,91 @@ function initBuffers(gl) {
 
   // Now create an array of positions for the square.
 
-  const positions = [1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0];
+  const positions = [
+    // Front face
+    -1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+
+    // Back face
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    -1.0,
+
+    // Top face
+    -1.0,
+    1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    -1.0,
+
+    // Bottom face
+    -1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    -1.0,
+    1.0,
+
+    // Right face
+    1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+
+    // Left face
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    -1.0,
+    1.0,
+    -1.0,
+    1.0,
+    1.0,
+    -1.0,
+    1.0,
+    -1.0
+  ];
 
   // Now pass the list of positions into WebGL to build the
   // shape. We do this by creating a Float32Array from the
@@ -84,8 +171,33 @@ function initBuffers(gl) {
 
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
+  const faceColors = [
+    [1.0, 1.0, 1.0, 1.0], // Front face: white
+    [1.0, 0.0, 0.0, 1.0], // Back face: red
+    [0.0, 1.0, 0.0, 1.0], // Top face: green
+    [0.0, 0.0, 1.0, 1.0], // Bottom face: blue
+    [1.0, 1.0, 0.0, 1.0], // Right face: yellow
+    [1.0, 0.0, 1.0, 1.0] // Left face: purple
+  ];
+
+  // Convert the array of colors into a table for all the vertices.
+
+  var colors = [];
+
+  for (var j = 0; j < faceColors.length; ++j) {
+    const c = faceColors[j];
+
+    // Repeat each color four times for the four vertices of the face
+    colors = colors.concat(c, c, c, c);
+  }
+
+  const colorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+
   return {
-    position: positionBuffer
+    position: positionBuffer,
+    color: colorBuffer
   };
 }
 
@@ -135,7 +247,7 @@ function drawScene(gl, programInfo, buffers) {
   // Tell WebGL how to pull out the positions from the position
   // buffer into the vertexPosition attribute.
   {
-    const numComponents = 2;
+    const numComponents = 3;
     const type = gl.FLOAT;
     const normalize = false;
     const stride = 0;
@@ -150,6 +262,24 @@ function drawScene(gl, programInfo, buffers) {
       offset
     );
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+  }
+
+  {
+    const numComponents = 4;
+    const type = gl.FLOAT;
+    const normalize = false;
+    const stride = 0;
+    const offset = 0;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
+    gl.vertexAttribPointer(
+      programInfo.attribLocations.vertexColor,
+      numComponents,
+      type,
+      normalize,
+      stride,
+      offset
+    );
+    gl.enableVertexAttribArray(programInfo.attribLocations.vertexColor);
   }
 
   // Tell WebGL to use our program when drawing
@@ -194,7 +324,7 @@ function initShaderProgram(gl, vsSource, fsSource) {
 
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
     alert(
-      "Unable to initialize the shader program: " +
+      'Unable to initialize the shader program: ' +
         gl.getProgramInfoLog(shaderProgram)
     );
     return null;
@@ -222,7 +352,7 @@ function loadShader(gl, type, source) {
 
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     alert(
-      "An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader)
+      'An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader)
     );
     gl.deleteShader(shader);
     return null;

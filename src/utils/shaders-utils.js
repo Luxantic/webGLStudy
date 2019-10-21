@@ -1,7 +1,7 @@
 const fs = require("fs").promises;
 class ShaderUtils {
   /**
-   * 
+   *
    * @param {string} path Path to the shader
    */
   static async loadShaderFromFile(path) {
