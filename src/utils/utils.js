@@ -95,7 +95,6 @@ class Utils {
           break;
       }
     });
-    console.log(model);
     return model;
   }
 }

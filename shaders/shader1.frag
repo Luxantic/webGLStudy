@@ -1,7 +1,10 @@
 // Fragment shader
 
-varying lowp vec4 vColor;
+varying highp vec2 vTextureCoord;
+
+uniform sampler2D uSampler;
 
 void main(void) {
-  gl_FragColor = vColor;
+  //0.6/0.6/0.7
+  gl_FragColor = texture2D(uSampler, vTextureCoord);
 }
